@@ -14,7 +14,6 @@ actual fun processExcelFile(filePath: String): List<Student> {
             println("Total rows in sheet: ${sheet.physicalNumberOfRows}")
             for (row in sheet.dropWhile { it.rowNum == 0 }) { // Skip header row
                 try {
-                    val applicationNo = row.getCell(0)?.stringCellValue
                     val name = row.getCell(1)?.stringCellValue
                     val phoneNo = row.getCell(2)?.stringCellValue
                     val email = row.getCell(3)?.stringCellValue
@@ -26,11 +25,11 @@ actual fun processExcelFile(filePath: String): List<Student> {
                     val category = row.getCell(5)?.stringCellValue
                     val address = row.getCell(6)?.stringCellValue
 
-                    println("Row ${row.rowNum}: AppNo=$applicationNo, Name=$name, Phone=$phoneNo, Email=$email, Score=$cuetScore, Category=$category, Address=$address")
+                    println("Row ${row.rowNum}: Name=$name, Phone=$phoneNo, Email=$email, Score=$cuetScore, Category=$category, Address=$address")
 
                     if (name != null && phoneNo != null && email != null && cuetScore != null && category != null && address != null) {
                         students.add(Student(name, "$phoneNo, $email", cuetScore, category, address))
-                        println("Added student: $name, CUET Score: $cuetScore")
+                        println("Added student: $name, CUET Score: $cuetScore, Category: $category")
                     } else {
                         println("Skipping row ${row.rowNum} due to missing data")
                     }

@@ -24,17 +24,25 @@ fun App() {
 @Composable
 fun MainContent() {
     var selectedFilePath by remember { mutableStateOf<String?>(null) }
-    var initialStudentsCount by remember { mutableStateOf("") }
-    var students by remember { mutableStateOf<List<Student>>(emptyList()) }
+    var totalSeats by remember { mutableStateOf("") }
+    var allocatedStudents by remember { mutableStateOf<Map<String, List<Student>>>(emptyMap()) }
+
+    val categoryQuotas = remember { mapOf(
+        "UR" to 0.4f,
+        "OBC" to 0.3f,
+        "SC" to 0.15f,
+        "ST" to 0.075f,
+        "PWD" to 0.075f
+    ) }
 
     val filePicker = rememberFilePickerLauncher(
         type = PickerType.File(extensions = listOf("xlsx", "xls")),
         mode = PickerMode.Single
     ) { file ->
-          if (file != null) {
-              selectedFilePath = file.path
-          }
+        if (file != null) {
+            selectedFilePath = file.path
         }
+    }
 
     Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Button(onClick = { filePicker.launch() }) {
@@ -44,34 +52,67 @@ fun MainContent() {
         if (selectedFilePath != null) {
             Spacer(Modifier.height(16.dp))
             TextField(
-                value = initialStudentsCount,
-                onValueChange = { initialStudentsCount = it },
-                label = { Text("Number of Initial Students") }
+                value = totalSeats,
+                onValueChange = { totalSeats = it },
+                label = { Text("Total Number of Seats") }
             )
 
             Spacer(Modifier.height(16.dp))
             Button(onClick = {
                 println("Processing file: $selectedFilePath")
-                val count = initialStudentsCount.toIntOrNull() ?: 0
-                println("Initial student count: $count")
-                students = processExcelFile(selectedFilePath!!).sortedByDescending { it.cuetScore }.take(count)
-                println("Processed students: ${students.size}")
+                val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
+                val processedStudents = processExcelFile(selectedFilePath!!)
+                allocatedStudents = allocateSeats(processedStudents, totalSeatsCount, categoryQuotas)
+                println("Allocated students: ${allocatedStudents.values.sumOf { it.size }}")
             }) {
-                Text("Process File")
+                Text("Process and Allocate Seats")
             }
         }
 
-        if (students.isNotEmpty()) {
+        if (allocatedStudents.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
-            Text("Selected Students:", style = MaterialTheme.typography.h6)
+            Text("Allocated Students:", style = MaterialTheme.typography.h6)
             LazyColumn {
-                items(students) { student ->
-                    Text("${student.name} - CUET Score: ${student.cuetScore}")
+                allocatedStudents.forEach { (category, students) ->
+                    item {
+                        Text("$category (${students.size}):", style = MaterialTheme.typography.subtitle1)
+                    }
+                    items(students) { student ->
+                        Text("${student.name} - CUET Score: ${student.cuetScore}")
+                    }
+                    item {
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
             }
         }
     }
 }
+
+fun allocateSeats(students: List<Student>, totalSeats: Int, quotas: Map<String, Float>): Map<String, List<Student>> {
+    val sortedStudents = students.sortedByDescending { it.cuetScore }
+    val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
+    val seatsPerCategory = quotas.mapValues { (_, quota) -> (totalSeats * quota).toInt() }
+
+    // Allocate UR seats first
+    val urSeats = seatsPerCategory["UR"] ?: 0
+    allocatedStudents["UR"] = sortedStudents.take(urSeats).toMutableList()
+
+    val remainingStudents = sortedStudents.drop(urSeats)
+
+    // Allocate seats for other categories
+    for ((category, seats) in seatsPerCategory) {
+        if (category != "UR") {
+            allocatedStudents[category] = remainingStudents
+                .filter { it.category == category }
+                .take(seats)
+                .toMutableList()
+        }
+    }
+
+    return allocatedStudents
+}
+
 
 data class Student(
     val name: String,
