@@ -10,6 +10,13 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.apache.logging.log4j") {
+            useVersion("2.20.0")
+        }
+    }
+}
 
 kotlin {
     androidTarget {
@@ -70,6 +77,13 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation("com.darkrockstudios:mpfilepicker:3.1.0")
             implementation("com.squareup.okio:okio:3.9.0")
+            implementation("org.apache.poi:poi-ooxml:5.2.3") {
+                exclude(group = "org.apache.logging.log4j", module = "log4j-api")
+            }
+            implementation("org.apache.logging.log4j:log4j-api:2.20.0")
+            implementation("org.apache.logging.log4j:log4j-core:2.20.0")
+            implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
+
 
         }
         desktopMain.dependencies {

@@ -1,6 +1,8 @@
 package ayush.ggv.counselling
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,12 +25,13 @@ fun MainContent() {
     var initialStudentsCount by remember { mutableStateOf("") }
     var students by remember { mutableStateOf<List<Student>>(emptyList()) }
     var showFilePicker by remember { mutableStateOf(false) }
-    val fileType = listOf("txt")  // Changed to .txt for simplicity
+    val fileType = listOf("xlsx", "xls")  // Excel file extensions
 
     FilePicker(show = showFilePicker, fileExtensions = fileType) { platformFile ->
         showFilePicker = false
         platformFile?.let {
             selectedFilePath = it.path
+            println("Selected file path: ${it.path}") // Add this line
         }
     }
 
@@ -36,7 +39,7 @@ fun MainContent() {
         Button(onClick = {
             showFilePicker = true
         }) {
-            Text("Select Text File")
+            Text("Select Excel File")
         }
 
         if (selectedFilePath != null) {
@@ -49,8 +52,11 @@ fun MainContent() {
 
             Spacer(Modifier.height(16.dp))
             Button(onClick = {
+                println("Processing file: $selectedFilePath") // Add this line
                 val count = initialStudentsCount.toIntOrNull() ?: 0
-                students = processTextFile(selectedFilePath!!).sortedByDescending { it.cuetScore }.take(count)
+                println("Initial student count: $count") // Add this line
+                students = processExcelFile(selectedFilePath!!).sortedByDescending { it.cuetScore }.take(count)
+                println("Processed students: ${students.size}") // Add this line
             }) {
                 Text("Process File")
             }
@@ -59,8 +65,10 @@ fun MainContent() {
         if (students.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Text("Selected Students:", style = MaterialTheme.typography.h6)
-            students.forEach { student ->
-                Text("${student.name} - CUET Score: ${student.cuetScore}")
+            LazyColumn {
+                items(students) { student ->
+                    Text("${student.name} - CUET Score: ${student.cuetScore}")
+                }
             }
         }
     }
@@ -68,27 +76,10 @@ fun MainContent() {
 
 data class Student(
     val name: String,
+    val phoneNoEmail: String,
     val cuetScore: Int,
-    val email: String,
-    val number: String
+    val category: String,
+    val address: String
 )
 
-expect fun readFileContent(filePath: String): List<String>
-
-fun processTextFile(filePath: String): List<Student> {
-    return readFileContent(filePath).mapNotNull { line ->
-        parseStudentData(line)
-    }
-}
-
-fun parseStudentData(line: String): Student? {
-    val parts = line.split(",")
-    if (parts.size >= 4) {
-        val name = parts[0].trim()
-        val cuetScore = parts[1].trim().toIntOrNull() ?: return null
-        val email = parts[2].trim()
-        val number = parts[3].trim()
-        return Student(name, cuetScore, email, number)
-    }
-    return null
-}
+expect fun processExcelFile(filePath: String): List<Student>
