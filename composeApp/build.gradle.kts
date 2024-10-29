@@ -10,13 +10,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 }
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.apache.logging.log4j") {
-            useVersion("2.20.0")
-        }
-    }
-}
 
 kotlin {
     androidTarget {
@@ -59,12 +52,19 @@ kotlin {
         binaries.executable()
     }
 
+
+
+
     sourceSets {
         val desktopMain by getting
-
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+            }
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -75,14 +75,11 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-            implementation("com.darkrockstudios:mpfilepicker:3.1.0")
             implementation("com.squareup.okio:okio:3.9.0")
-            implementation("org.apache.poi:poi-ooxml:5.2.3") {
-                exclude(group = "org.apache.logging.log4j", module = "log4j-api")
-            }
-            implementation("org.apache.logging.log4j:log4j-api:2.20.0")
-            implementation("org.apache.logging.log4j:log4j-core:2.20.0")
-            implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
+            implementation("org.apache.poi:poi-ooxml:5.2.4")
+
+            implementation("io.github.vinceglb:filekit-core:0.8.7")
+            implementation("io.github.vinceglb:filekit-compose:0.8.7")
 
 
         }
@@ -122,6 +119,7 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 }
 
 compose.desktop {
