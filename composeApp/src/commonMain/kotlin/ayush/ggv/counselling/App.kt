@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -43,6 +45,8 @@ fun MainContent() {
     var allocatedStudents by remember { mutableStateOf<Map<String, List<Student>>>(emptyMap()) }
     val coroutineScope = rememberCoroutineScope()
     var isExporting by remember { mutableStateOf(false) }
+    var exportFormat by remember { mutableStateOf("Excel") }
+    var exportMenuExpanded by remember { mutableStateOf(false) }
     val categoryQuotas = remember {
         mapOf(
             "UR" to 0.4f,
@@ -94,26 +98,48 @@ fun MainContent() {
         if (allocatedStudents.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = {
-                    coroutineScope.launch {
-                        isExporting = true
-                        val exportFilePath =
-                            "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
-                        val success = exportResults(allocatedStudents, exportFilePath)
-                        isExporting = false
-                        // You could show a success/failure message here
-                    }
-                },
+                onClick = { exportMenuExpanded = true },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isExporting
             ) {
-                if (isExporting) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                } else {
-                    Text("Export Results")
+                Text("Export Results")
+            }
+            DropdownMenu(
+                expanded = exportMenuExpanded,
+                onDismissRequest = { exportMenuExpanded = false }
+            ) {
+                DropdownMenuItem(onClick = {
+                    exportFormat = "Excel"
+                    exportMenuExpanded = false
+                    coroutineScope.launch {
+                        isExporting = true
+                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                        val success = exportResults(allocatedStudents, exportFilePath, "Excel")
+                        isExporting = false
+                        // Show success/failure message
+                    }
+                }) {
+                    Text("Export as Excel")
+                }
+                DropdownMenuItem(onClick = {
+                    exportFormat = "PDF"
+                    exportMenuExpanded = false
+                    coroutineScope.launch {
+                        isExporting = true
+                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
+                        val success = exportResults(allocatedStudents, exportFilePath, "PDF")
+                        isExporting = false
+                        // Show success/failure message
+                    }
+                }) {
+                    Text("Export as PDF")
                 }
             }
+            if (isExporting) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            }
         }
+
 
         if (allocatedStudents.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
@@ -196,7 +222,8 @@ data class Student(
 
 expect suspend fun exportResults(
     allocatedStudents: Map<String, List<Student>>,
-    filePath: String
+    filePath: String,
+    format: String
 ): Boolean
 
 expect fun processExcelFile(filePath: String): List<Student>

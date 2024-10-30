@@ -80,6 +80,8 @@ kotlin {
 
             implementation("io.github.vinceglb:filekit-core:0.8.7")
             implementation("io.github.vinceglb:filekit-compose:0.8.7")
+            implementation("com.itextpdf:itextpdf:5.5.13.3")
+
 
 
         }
