@@ -2,9 +2,11 @@ package ayush.ggv.counselling
 
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.CellType
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
+import java.io.FileOutputStream
 
 actual fun processExcelFile(filePath: String): List<Student> {
     val students = mutableListOf<Student>()
@@ -32,4 +34,52 @@ actual fun processExcelFile(filePath: String): List<Student> {
         }
     }
     return students
+}
+
+actual fun exportResults(allocatedStudents: Map<String, List<Student>>, filePath: String) {
+    val workbook = XSSFWorkbook()
+    var rowNum = 0
+
+    allocatedStudents.forEach { (category, students) ->
+        val sheet = workbook.createSheet(category)
+
+        var row = sheet.createRow(rowNum++)
+        var cell = row.createCell(0)
+        cell.setCellValue(category)
+
+        // Create header row
+        row = sheet.createRow(rowNum++)
+        val headers = listOf("Name", "Phone/Email", "CUET Score", "Category", "Address")
+        headers.forEachIndexed { index, header ->
+            cell = row.createCell(index)
+            cell.setCellValue(header)
+        }
+
+        // Add student data
+        students.forEach { student ->
+            row = sheet.createRow(rowNum++)
+            row.createCell(0).setCellValue(student.name)
+            row.createCell(1).setCellValue(student.phoneNoEmail)
+            row.createCell(2).setCellValue(student.cuetScore.toDouble())
+            row.createCell(3).setCellValue(student.category)
+            row.createCell(4).setCellValue(student.address)
+        }
+
+        rowNum += 2 // Add some space between categories
+    }
+
+    // Auto-size columns for all sheets
+    for (i in 0 until workbook.numberOfSheets) {
+        val sheet = workbook.getSheetAt(i)
+        for (j in 0..4) { // Assuming 5 columns (0-4)
+            sheet.autoSizeColumn(j)
+        }
+    }
+
+    // Write the output to a file
+    FileOutputStream(filePath).use { fileOut ->
+        workbook.write(fileOut)
+    }
+    workbook.close()
+    println("Results exported successfully to $filePath")
 }

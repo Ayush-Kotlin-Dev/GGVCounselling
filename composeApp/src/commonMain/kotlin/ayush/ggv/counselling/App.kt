@@ -1,10 +1,12 @@
 package ayush.ggv.counselling
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
@@ -88,6 +90,19 @@ fun MainContent() {
 
         if (allocatedStudents.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                    exportResults(allocatedStudents, exportFilePath)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Export Results")
+            }
+        }
+
+        if (allocatedStudents.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
             Text("Allocated Students:", style = MaterialTheme.typography.h6)
             LazyColumn {
                 allocatedStudents.forEach { (category, students) ->
@@ -117,7 +132,7 @@ fun allocateSeats(
     totalSeats: Int,
     quotas: Map<String, Float>
 ): Map<String, List<Student>> {
-    val sortedStudents = students.sortedByDescending { it.cuetScore }
+    val sortedStudents = students.sortedByDescending { it.cuetScore } //TODO implement a mechanism to overcome clashing os same score 
     val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
     val seatsPerCategory = quotas.mapValues { (_, quota) -> (totalSeats * quota).toInt() }
     val waitingListSize = 5
@@ -162,5 +177,9 @@ data class Student(
     val category: String,
     val address: String
 )
+
+
+
+expect fun exportResults(allocatedStudents: Map<String, List<Student>>, filePath: String)
 
 expect fun processExcelFile(filePath: String): List<Student>
