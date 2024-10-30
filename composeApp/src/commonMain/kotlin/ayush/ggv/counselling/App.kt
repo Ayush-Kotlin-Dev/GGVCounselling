@@ -1,15 +1,15 @@
 package ayush.ggv.counselling
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -39,7 +41,8 @@ fun MainContent() {
     var selectedFilePath by remember { mutableStateOf<String?>(null) }
     var totalSeats by remember { mutableStateOf("") }
     var allocatedStudents by remember { mutableStateOf<Map<String, List<Student>>>(emptyMap()) }
-
+    val coroutineScope = rememberCoroutineScope()
+    var isExporting by remember { mutableStateOf(false) }
     val categoryQuotas = remember {
         mapOf(
             "UR" to 0.4f,
@@ -92,12 +95,23 @@ fun MainContent() {
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
-                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
-                    exportResults(allocatedStudents, exportFilePath)
+                    coroutineScope.launch {
+                        isExporting = true
+                        val exportFilePath =
+                            "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                        val success = exportResults(allocatedStudents, exportFilePath)
+                        isExporting = false
+                        // You could show a success/failure message here
+                    }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isExporting
             ) {
-                Text("Export Results")
+                if (isExporting) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Export Results")
+                }
             }
         }
 
@@ -132,7 +146,8 @@ fun allocateSeats(
     totalSeats: Int,
     quotas: Map<String, Float>
 ): Map<String, List<Student>> {
-    val sortedStudents = students.sortedByDescending { it.cuetScore } //TODO implement a mechanism to overcome clashing os same score 
+    val sortedStudents =
+        students.sortedByDescending { it.cuetScore } //TODO implement a mechanism to overcome clashing of same score  ( Tie-breaking Mechanism: )
     val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
     val seatsPerCategory = quotas.mapValues { (_, quota) -> (totalSeats * quota).toInt() }
     val waitingListSize = 5
@@ -179,7 +194,9 @@ data class Student(
 )
 
 
-
-expect fun exportResults(allocatedStudents: Map<String, List<Student>>, filePath: String)
+expect suspend fun exportResults(
+    allocatedStudents: Map<String, List<Student>>,
+    filePath: String
+): Boolean
 
 expect fun processExcelFile(filePath: String): List<Student>
