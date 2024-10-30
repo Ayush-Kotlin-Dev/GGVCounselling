@@ -1,28 +1,28 @@
 package ayush.ggv.counselling
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
@@ -66,107 +66,168 @@ fun MainContent() {
         }
     }
 
-    Column(
-        Modifier.fillMaxWidth().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colors.background
     ) {
-        Button(onClick = { filePicker.launch() }) {
-            Text("Select Excel File")
-        }
-
-        if (selectedFilePath != null) {
-            Spacer(Modifier.height(16.dp))
-            TextField(
-                value = totalSeats,
-                onValueChange = { totalSeats = it },
-                label = { Text("Total Number of Seats") }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "GGV Counselling",
+                style = MaterialTheme.typography.h4,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = {
-                println("Processing file: $selectedFilePath")
-                val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
-                val processedStudents = processExcelFile(selectedFilePath!!)
-                allocatedStudents =
-                    allocateSeats(processedStudents, totalSeatsCount, categoryQuotas)
-                println("Allocated students: ${allocatedStudents.values.sumOf { it.size }}")
-            }) {
-                Text("Process and Allocate Seats")
-            }
-        }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(
+                        onClick = { filePicker.launch() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Upload")
+                        Spacer(Modifier.width(8.dp))
+                        Text("Select Excel File")
+                    }
 
-        if (allocatedStudents.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = { exportMenuExpanded = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isExporting
-            ) {
-                Text("Export Results")
-            }
-            DropdownMenu(
-                expanded = exportMenuExpanded,
-                onDismissRequest = { exportMenuExpanded = false }
-            ) {
-                DropdownMenuItem(onClick = {
-                    exportFormat = "Excel"
-                    exportMenuExpanded = false
-                    coroutineScope.launch {
-                        isExporting = true
-                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
-                        val success = exportResults(allocatedStudents, exportFilePath, "Excel")
-                        isExporting = false
-                        // Show success/failure message
+                    AnimatedVisibility(visible = selectedFilePath != null) {
+                        Column {
+                            Spacer(Modifier.height(16.dp))
+                            OutlinedTextField(
+                                value = totalSeats,
+                                onValueChange = { totalSeats = it },
+                                label = { Text("Total Number of Seats") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
+                                    val processedStudents = processExcelFile(selectedFilePath!!)
+                                    allocatedStudents = allocateSeats(processedStudents, totalSeatsCount, categoryQuotas)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                            ) {
+                                Icon(Icons.Default.AddCircle, contentDescription = "Process")
+                                Spacer(Modifier.width(8.dp))
+                                Text("Process and Allocate Seats")
+                            }
+                        }
                     }
-                }) {
-                    Text("Export as Excel")
-                }
-                DropdownMenuItem(onClick = {
-                    exportFormat = "PDF"
-                    exportMenuExpanded = false
-                    coroutineScope.launch {
-                        isExporting = true
-                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
-                        val success = exportResults(allocatedStudents, exportFilePath, "PDF")
-                        isExporting = false
-                        // Show success/failure message
-                    }
-                }) {
-                    Text("Export as PDF")
                 }
             }
-            if (isExporting) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            }
-        }
 
+            AnimatedVisibility(visible = allocatedStudents.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    elevation = 4.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Allocated Students",
+                            style = MaterialTheme.typography.h6,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-        if (allocatedStudents.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Text("Allocated Students:", style = MaterialTheme.typography.h6)
-            LazyColumn {
-                allocatedStudents.forEach { (category, students) ->
-                    item {
-                        Text(
-                            "$category (${students.count { !it.name.contains("Waiting List") }}):",
-                            style = MaterialTheme.typography.subtitle1
-                        )
-                    }
-                    items(students) { student ->
-                        Text(
-                            "${student.name} - CUET Score: ${student.cuetScore}",
-                            color = if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary else MaterialTheme.colors.onSurface
-                        )
-                    }
-                    item {
-                        Spacer(Modifier.height(8.dp))
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                        ) {
+                            allocatedStudents.forEach { (category, students) ->
+                                item {
+                                    Text(
+                                        "$category (${students.count { !it.name.contains("Waiting List") }}):",
+                                        style = MaterialTheme.typography.subtitle1,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                    )
+                                }
+                                items(students) { student ->
+                                    Text(
+                                        "${student.name} - CUET Score: ${student.cuetScore}",
+                                        color = if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary else MaterialTheme.colors.onSurface,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary.copy(alpha = 0.1f) else Color.Transparent)
+                                            .padding(4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = { exportMenuExpanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isExporting,
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primaryVariant)
+                        ) {
+                            Text("Export Results")
+                        }
+                        DropdownMenu(
+                            expanded = exportMenuExpanded,
+                            onDismissRequest = { exportMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(onClick = {
+                                exportFormat = "Excel"
+                                exportMenuExpanded = false
+                                coroutineScope.launch {
+                                    isExporting = true
+                                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                                    val success = exportResults(allocatedStudents, exportFilePath, "Excel")
+                                    isExporting = false
+                                    // Show success/failure message
+                                }
+                            }) {
+                                Text("Export as Excel")
+                            }
+                            DropdownMenuItem(onClick = {
+                                exportFormat = "PDF"
+                                exportMenuExpanded = false
+                                coroutineScope.launch {
+                                    isExporting = true
+                                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
+                                    val success = exportResults(allocatedStudents, exportFilePath, "PDF")
+                                    isExporting = false
+                                    // Show success/failure message
+                                }
+                            }) {
+                                Text("Export as PDF")
+                            }
+                        }
+                        if (isExporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
             }
         }
     }
 }
-
 fun allocateSeats(
     students: List<Student>,
     totalSeats: Int,
@@ -209,8 +270,6 @@ fun allocateSeats(
 
     return allocatedStudents
 }
-
-
 data class Student(
     val name: String,
     val phoneNoEmail: String,
