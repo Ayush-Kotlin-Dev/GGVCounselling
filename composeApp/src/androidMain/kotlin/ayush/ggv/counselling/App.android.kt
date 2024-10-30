@@ -9,6 +9,10 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import com.itextpdf.text.*
+import com.itextpdf.text.pdf.PdfPCell
+import com.itextpdf.text.pdf.PdfPTable
+import com.itextpdf.text.pdf.PdfWriter
 
 actual fun processExcelFile(filePath: String): List<Student> {
     val students = mutableListOf<Student>()
@@ -38,55 +42,19 @@ actual fun processExcelFile(filePath: String): List<Student> {
     return students
 }
 
+
 actual suspend fun exportResults(
     allocatedStudents: Map<String, List<Student>>,
-    filePath: String
+    filePath: String,
+    format: String
 ): Boolean {
     return withContext(Dispatchers.IO) {
         try {
-            val workbook = XSSFWorkbook()
-            var rowNum = 0
-
-            allocatedStudents.forEach { (category, students) ->
-                val sheet = workbook.createSheet(category)
-
-                var row = sheet.createRow(rowNum++)
-                var cell = row.createCell(0)
-                cell.setCellValue(category)
-
-                // Create header row
-                row = sheet.createRow(rowNum++)
-                val headers = listOf("Name", "Phone/Email", "CUET Score", "Category", "Address")
-                headers.forEachIndexed { index, header ->
-                    cell = row.createCell(index)
-                    cell.setCellValue(header)
-                }
-
-                // Add student data
-                students.forEach { student ->
-                    row = sheet.createRow(rowNum++)
-                    row.createCell(0).setCellValue(student.name)
-                    row.createCell(1).setCellValue(student.phoneNoEmail)
-                    row.createCell(2).setCellValue(student.cuetScore.toDouble())
-                    row.createCell(3).setCellValue(student.category)
-                    row.createCell(4).setCellValue(student.address)
-                }
-
-                rowNum += 2 // Add some space between categories
+            when (format) {
+                "Excel" -> exportToExcel(allocatedStudents, filePath)
+                "PDF" -> exportToPDF(allocatedStudents, filePath)
+                else -> throw IllegalArgumentException("Unsupported format: $format")
             }
-
-            // Auto-size columns for all sheets
-            for (i in 0 until workbook.numberOfSheets) {
-                val sheet = workbook.getSheetAt(i)
-                for (j in 0..4) { // Assuming 5 columns (0-4)
-                    sheet.autoSizeColumn(j)
-                }
-            }
-
-            FileOutputStream(filePath).use { fileOut ->
-                workbook.write(fileOut)
-            }
-            workbook.close()
             println("Results exported successfully to $filePath")
             true
         } catch (e: Exception) {
@@ -95,4 +63,87 @@ actual suspend fun exportResults(
             false
         }
     }
+}
+
+private fun exportToExcel(allocatedStudents: Map<String, List<Student>>, filePath: String) {
+    val workbook = XSSFWorkbook()
+    var rowNum = 0
+
+    val sortedCategories = listOf("UR", "OBC", "SC", "ST", "PWD")
+
+    sortedCategories.forEach { category ->
+        val students = allocatedStudents[category] ?: return@forEach
+        val sheet = workbook.createSheet(category)
+
+        var row = sheet.createRow(rowNum++)
+        var cell = row.createCell(0)
+        cell.setCellValue(category)
+
+        // Create header row
+        row = sheet.createRow(rowNum++)
+        val headers = listOf("Name", "Phone/Email", "CUET Score", "Category", "Address")
+        headers.forEachIndexed { index, header ->
+            cell = row.createCell(index)
+            cell.setCellValue(header)
+        }
+
+        // Add student data
+        students.forEach { student ->
+            row = sheet.createRow(rowNum++)
+            row.createCell(0).setCellValue(student.name)
+            row.createCell(1).setCellValue(student.phoneNoEmail)
+            row.createCell(2).setCellValue(student.cuetScore.toDouble())
+            row.createCell(3).setCellValue(student.category)
+            row.createCell(4).setCellValue(student.address)
+        }
+
+        // Auto-size columns
+        for (i in 0..4) {
+            sheet.autoSizeColumn(i)
+        }
+
+        rowNum = 0 // Reset row number for next sheet
+    }
+
+    FileOutputStream(filePath).use { fileOut ->
+        workbook.write(fileOut)
+    }
+    workbook.close()
+}
+
+private fun exportToPDF(allocatedStudents: Map<String, List<Student>>, filePath: String) {
+    val document = Document()
+    PdfWriter.getInstance(document, FileOutputStream(filePath))
+    document.open()
+
+    val sortedCategories = listOf("UR", "OBC", "SC", "ST", "PWD")
+
+    sortedCategories.forEach { category ->
+        val students = allocatedStudents[category] ?: return@forEach
+
+        document.add(Paragraph(category, Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)))
+        document.add(Paragraph(" "))
+
+        val table = PdfPTable(5)
+        table.widthPercentage = 100f
+
+        // Add header row
+        listOf("Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
+            table.addCell(PdfPCell(Phrase(it, Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD))))
+        }
+
+        // Add student data
+        students.forEach { student ->
+            table.addCell(student.name)
+            table.addCell(student.phoneNoEmail)
+            table.addCell(student.cuetScore.toString())
+            table.addCell(student.category)
+            table.addCell(student.address)
+        }
+
+        document.add(table)
+        document.add(Paragraph(" "))
+    }
+
+    document.close()
 }
