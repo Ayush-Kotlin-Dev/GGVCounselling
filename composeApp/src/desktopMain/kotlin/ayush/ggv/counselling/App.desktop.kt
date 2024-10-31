@@ -102,24 +102,25 @@ private fun exportToExcel(allocatedStudents: Map<String, List<Student>>, filePat
 
         // Create header row
         row = sheet.createRow(rowNum++)
-        val headers = listOf("Name", "Phone/Email", "CUET Score", "Category", "Address")
+        val headers = listOf("S.No.", "Name", "Phone/Email", "CUET Score", "Category", "Address")
         headers.forEachIndexed { index, header ->
             cell = row.createCell(index)
             cell.setCellValue(header)
         }
 
         // Add student data
-        students.forEach { student ->
+        students.forEachIndexed { index, student ->
             row = sheet.createRow(rowNum++)
-            row.createCell(0).setCellValue(student.name)
-            row.createCell(1).setCellValue(student.phoneNoEmail)
-            row.createCell(2).setCellValue(student.cuetScore.toDouble())
-            row.createCell(3).setCellValue(student.category)
-            row.createCell(4).setCellValue(student.address)
+            row.createCell(0).setCellValue((index + 1).toString())
+            row.createCell(1).setCellValue(student.name)
+            row.createCell(2).setCellValue(student.phoneNoEmail)
+            row.createCell(3).setCellValue(student.cuetScore.toDouble())
+            row.createCell(4).setCellValue(student.category)
+            row.createCell(5).setCellValue(student.address)
         }
 
         // Auto-size columns
-        for (i in 0..4) {
+        for (i in 0..5) {
             sheet.autoSizeColumn(i)
         }
 
@@ -145,16 +146,17 @@ private fun exportToPDF(allocatedStudents: Map<String, List<Student>>, filePath:
         document.add(Paragraph(category, Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)))
         document.add(Paragraph(" "))
 
-        val table = PdfPTable(5)
+        val table = PdfPTable(6)
         table.widthPercentage = 100f
 
         // Add header row
-        listOf("Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
+        listOf("S.No.", "Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
             table.addCell(PdfPCell(Phrase(it, Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD))))
         }
 
         // Add student data
-        students.forEach { student ->
+        students.forEachIndexed { index, student ->
+            table.addCell((index + 1).toString())
             table.addCell(student.name)
             table.addCell(student.phoneNoEmail)
             table.addCell(student.cuetScore.toString())
