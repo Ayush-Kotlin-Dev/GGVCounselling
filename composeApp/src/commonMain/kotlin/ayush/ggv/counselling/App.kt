@@ -243,8 +243,6 @@ fun allocateSeats(
     val urSeats = seatsPerCategory["UR"] ?: 0
     allocatedStudents["UR"] = sortedStudents.take(urSeats).toMutableList()
 
-    val allocatedStudentsWithSerialNo = mutableMapOf<String, MutableList<Student>>()
-
 
     val remainingStudents = sortedStudents.drop(urSeats).toMutableList()
 
@@ -271,16 +269,7 @@ fun allocateSeats(
         remainingStudents.removeAll(waitingList)
     }
 
-    // Add serial numbers to each category
-    allocatedStudents.forEach { (category, students) ->
-        allocatedStudentsWithSerialNo[category] = students.mapIndexed { index, student ->
-            student.copy(
-                name = "${index + 1}. ${student.name}"
-            )
-        }.toMutableList()
-    }
-
-    return allocatedStudentsWithSerialNo
+    return allocatedStudents
 }
 data class Student(
     val name: String,
@@ -299,6 +288,3 @@ expect suspend fun exportResults(
 ): Boolean
 
 expect fun processExcelFile(filePath: String): List<Student>
-
-
-//TOdo great , perfect , but currently their is no serial no anywhere , add serial no in each categrory like in ur start from 1 to 35 for example then in obc again starts from 1 ,
