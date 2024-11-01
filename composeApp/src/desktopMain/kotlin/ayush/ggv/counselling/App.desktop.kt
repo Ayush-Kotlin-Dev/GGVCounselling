@@ -23,6 +23,7 @@ actual fun processExcelFile(filePath: String): List<Student> {
             println("Total rows in sheet: ${sheet.physicalNumberOfRows}")
             for (row in sheet.dropWhile { it.rowNum == 0 }) { // Skip header row
                 try {
+                    val cuetApplicationNo = row.getCell(0)?.stringCellValue
                     val name = row.getCell(1)?.stringCellValue
                     val phoneNo = row.getCell(2)?.stringCellValue
                     val email = row.getCell(3)?.stringCellValue
@@ -36,9 +37,10 @@ actual fun processExcelFile(filePath: String): List<Student> {
 
                     println("Row ${row.rowNum}: Name=$name, Phone=$phoneNo, Email=$email, Score=$cuetScore, Category=$category, Address=$address")
 
-                    if (name != null && phoneNo != null && email != null && cuetScore != null && category != null && address != null) {
+                    if (cuetApplicationNo != null && name != null && phoneNo != null && email != null && cuetScore != null && category != null && address != null) {
                         students.add(
                             Student(
+                                cuetApplicationNo,
                                 name,
                                 "$phoneNo, $email",
                                 cuetScore,
@@ -102,7 +104,7 @@ private fun exportToExcel(allocatedStudents: Map<String, List<Student>>, filePat
 
         // Create header row
         row = sheet.createRow(rowNum++)
-        val headers = listOf("S.No.", "Name", "Phone/Email", "CUET Score", "Category", "Address")
+        val headers = listOf("S.No.", "Cuet Application" , "Name", "Phone/Email", "CUET Score", "Category", "Address")
         headers.forEachIndexed { index, header ->
             cell = row.createCell(index)
             cell.setCellValue(header)
@@ -112,15 +114,16 @@ private fun exportToExcel(allocatedStudents: Map<String, List<Student>>, filePat
         students.forEachIndexed { index, student ->
             row = sheet.createRow(rowNum++)
             row.createCell(0).setCellValue((index + 1).toString())
-            row.createCell(1).setCellValue(student.name)
-            row.createCell(2).setCellValue(student.phoneNoEmail)
-            row.createCell(3).setCellValue(student.cuetScore.toDouble())
-            row.createCell(4).setCellValue(student.category)
-            row.createCell(5).setCellValue(student.address)
+            row.createCell(1).setCellValue(student.cuetApplicationNo)
+            row.createCell(2).setCellValue(student.name)
+            row.createCell(3).setCellValue(student.phoneNoEmail)
+            row.createCell(4).setCellValue(student.cuetScore.toDouble())
+            row.createCell(5).setCellValue(student.category)
+            row.createCell(6).setCellValue(student.address)
         }
 
         // Auto-size columns
-        for (i in 0..5) {
+        for (i in 0..6) {
             sheet.autoSizeColumn(i)
         }
 
@@ -150,13 +153,14 @@ private fun exportToPDF(allocatedStudents: Map<String, List<Student>>, filePath:
         table.widthPercentage = 100f
 
         // Add header row
-        listOf("S.No.", "Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
+        listOf("S.No.", "Cuet Application " , "Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
             table.addCell(PdfPCell(Phrase(it, Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD))))
         }
 
         // Add student data
         students.forEachIndexed { index, student ->
             table.addCell((index + 1).toString())
+            table.addCell(student.cuetApplicationNo)
             table.addCell(student.name)
             table.addCell(student.phoneNoEmail)
             table.addCell(student.cuetScore.toString())

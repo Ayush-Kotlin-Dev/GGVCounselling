@@ -2,7 +2,9 @@ package ayush.ggv.counselling
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +15,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Card
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +66,11 @@ fun MainContent() {
     var isExporting by remember { mutableStateOf(false) }
     var exportFormat by remember { mutableStateOf("Excel") }
     var exportMenuExpanded by remember { mutableStateOf(false) }
+
+    var processedStudents by remember { mutableStateOf<List<Student>>(emptyList()) }
+    var selectedStudents by remember { mutableStateOf<List<Student>>(emptyList()) }
+    var showStudentSelection by remember { mutableStateOf(false) }
+
     val categoryQuotas = remember {
         mapOf(
             "UR" to 0.4f,
@@ -116,17 +140,66 @@ fun MainContent() {
                             Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = {
-                                    val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
-                                    val processedStudents = processExcelFile(selectedFilePath!!)
-                                    allocatedStudents = allocateSeats(processedStudents, totalSeatsCount, categoryQuotas)
+                                    processedStudents = processExcelFile(selectedFilePath!!)
+                                    showStudentSelection = true
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
                             ) {
                                 Icon(Icons.Default.AddCircle, contentDescription = "Process")
                                 Spacer(Modifier.width(8.dp))
-                                Text("Process and Allocate Seats")
+                                Text("Process Excel File")
                             }
+                        }
+                    }
+                    if (showStudentSelection) {
+                        StudentSelectionDialog(
+                            students = processedStudents,
+                            onDismiss = { showStudentSelection = false },
+                            onConfirm = { selected ->
+                                selectedStudents = selected
+                                showStudentSelection = false
+                            }
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(visible = selectedStudents.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    elevation = 4.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Selected Students: ${selectedStudents.size}",
+                            style = MaterialTheme.typography.h6,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = totalSeats,
+                            onValueChange = { totalSeats = it },
+                            label = { Text("Total Number of Seats") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
+                                allocatedStudents =
+                                    allocateSeats(selectedStudents, totalSeatsCount, categoryQuotas)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                        ) {
+                            Text("Allocate Seats")
                         }
                     }
                 }
@@ -172,7 +245,11 @@ fun MainContent() {
                                             .fillMaxWidth()
                                             .padding(vertical = 2.dp)
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary.copy(alpha = 0.1f) else Color.Transparent)
+                                            .background(
+                                                if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary.copy(
+                                                    alpha = 0.1f
+                                                ) else Color.Transparent
+                                            )
                                             .padding(4.dp)
                                     )
                                 }
@@ -197,8 +274,10 @@ fun MainContent() {
                                 exportMenuExpanded = false
                                 coroutineScope.launch {
                                     isExporting = true
-                                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
-                                    val success = exportResults(allocatedStudents, exportFilePath, "Excel")
+                                    val exportFilePath =
+                                        "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                                    val success =
+                                        exportResults(allocatedStudents, exportFilePath, "Excel")
                                     isExporting = false
                                     // Show success/failure message
                                 }
@@ -210,8 +289,10 @@ fun MainContent() {
                                 exportMenuExpanded = false
                                 coroutineScope.launch {
                                     isExporting = true
-                                    val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
-                                    val success = exportResults(allocatedStudents, exportFilePath, "PDF")
+                                    val exportFilePath =
+                                        "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
+                                    val success =
+                                        exportResults(allocatedStudents, exportFilePath, "PDF")
                                     isExporting = false
                                     // Show success/failure message
                                 }
@@ -228,6 +309,76 @@ fun MainContent() {
         }
     }
 }
+
+@Composable
+fun StudentSelectionDialog(
+    students: List<Student>,
+    onDismiss: () -> Unit,
+    onConfirm: (List<Student>) -> Unit
+) {
+    var selectedStudents by remember { mutableStateOf(setOf<Student>()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Students for Counselling") },
+        text = {
+            Column {
+                // Headings
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colors.primary.copy(alpha = 0.1f))
+                        .padding(8.dp)
+                ) {
+                    Text("Select", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
+                    Text("App. No.", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
+                    Text("Name", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
+                    Text("CUET Score", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
+                    Text("Category", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
+                }
+
+                // Student list
+                LazyColumn {
+                    items(students) { student ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedStudents = if (selectedStudents.contains(student)) {
+                                        selectedStudents - student
+                                    } else {
+                                        selectedStudents + student
+                                    }
+                                }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Checkbox(
+                                checked = selectedStudents.contains(student),
+                                onCheckedChange = null,
+                                modifier = Modifier.weight(0.1f)
+                            )
+                            Text(student.cuetApplicationNo, modifier = Modifier.weight(0.2f))
+                            Text(student.name, modifier = Modifier.weight(0.3f))
+                            Text(student.cuetScore.toString(), modifier = Modifier.weight(0.2f))
+                            Text(student.category, modifier = Modifier.weight(0.2f))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(selectedStudents.toList()) }) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 fun allocateSeats(
     students: List<Student>,
     totalSeats: Int,
@@ -271,7 +422,9 @@ fun allocateSeats(
 
     return allocatedStudents
 }
+
 data class Student(
+    val cuetApplicationNo : String ,
     val name: String,
     val phoneNoEmail: String,
     val cuetScore: Int,
