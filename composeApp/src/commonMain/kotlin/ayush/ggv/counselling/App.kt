@@ -26,6 +26,7 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -70,6 +71,7 @@ fun MainContent() {
     var processedStudents by remember { mutableStateOf<List<Student>>(emptyList()) }
     var selectedStudents by remember { mutableStateOf<List<Student>>(emptyList()) }
     var showStudentSelection by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val categoryQuotas = remember {
         mapOf(
@@ -191,16 +193,21 @@ fun MainContent() {
 
                         Spacer(Modifier.height(16.dp))
                         Button(
-                            onClick = {
-                                val totalSeatsCount = totalSeats.toIntOrNull() ?: 0
-                                allocatedStudents =
-                                    allocateSeats(selectedStudents, totalSeatsCount, categoryQuotas)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                                onClick = {
+                                    if (validateInputs(totalSeats, selectedStudents)) {
+                                        val totalSeatsCount = totalSeats.toInt()
+                                        allocatedStudents = allocateSeats(selectedStudents, totalSeatsCount, categoryQuotas)
+                                    } else {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Please check your inputs and try again.")
+                                        }
+                                    }
+                                },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
                         ) {
-                            Text("Allocate Seats")
-                        }
+                        Text("Allocate Seats")
+                    }
                     }
                 }
             }
@@ -317,12 +324,21 @@ fun StudentSelectionDialog(
     onConfirm: (List<Student>) -> Unit
 ) {
     var selectedStudents by remember { mutableStateOf(setOf<Student>()) }
+    var searchQuery by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Students for Counselling") },
         text = {
             Column {
+                // Search bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search by Application No. or Name") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+
                 // Headings
                 Row(
                     modifier = Modifier
@@ -339,7 +355,11 @@ fun StudentSelectionDialog(
 
                 // Student list
                 LazyColumn {
-                    items(students) { student ->
+                    val filteredStudents = students.filter { student ->
+                        searchQuery.isEmpty() || student.cuetApplicationNo.contains(searchQuery, ignoreCase = true) ||
+                                student.name.contains(searchQuery, ignoreCase = true)
+                    }
+                    items(filteredStudents) { student ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -378,7 +398,6 @@ fun StudentSelectionDialog(
         }
     )
 }
-
 fun allocateSeats(
     students: List<Student>,
     totalSeats: Int,
@@ -423,6 +442,15 @@ fun allocateSeats(
     return allocatedStudents
 }
 
+fun validateInputs(totalSeats: String, selectedStudents: List<Student>): Boolean {
+    val totalSeatsCount = totalSeats.toIntOrNull()
+    return when {
+        totalSeatsCount == null || totalSeatsCount <= 0 -> false
+        selectedStudents.isEmpty() -> false
+        else -> true
+    }
+}
+
 data class Student(
     val cuetApplicationNo : String ,
     val name: String,
@@ -441,3 +469,6 @@ expect suspend fun exportResults(
 ): Boolean
 
 expect fun processExcelFile(filePath: String): List<Student>
+
+
+//TODO Fix a bug in student allocation related to ur / general 
