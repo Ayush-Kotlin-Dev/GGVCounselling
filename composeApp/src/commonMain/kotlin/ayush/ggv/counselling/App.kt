@@ -415,20 +415,25 @@ fun allocateSeats(
     totalSeats: Int,
     quotas: Map<String, Float>
 ): Map<String, List<Student>> {
-    val sortedStudents =
-        students.sortedByDescending { it.cuetScore } //TODO implement a mechanism to overcome clashing of same score  ( Tie-breaking Mechanism: )
+    val sortedStudents = students.sortedByDescending { it.cuetScore }
     val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
     val seatsPerCategory = quotas.mapValues { (_, quota) -> (totalSeats * quota).toInt() }
     val waitingListSize = 5
 
     // Allocate UR seats first
     val urSeats = seatsPerCategory["UR"] ?: 0
-    allocatedStudents["UR"] = sortedStudents.take(urSeats).toMutableList()
+    val urAllocated = mutableListOf<Student>()
+    var remainingStudents = sortedStudents.toMutableList()
+    // Allocate UR seats to top scorers from all categories
+    for (i in 0 until urSeats) {
+        if (remainingStudents.isNotEmpty()) {
+            val student = remainingStudents.removeAt(0)
+            urAllocated.add(student)
+        }
+    }
+    allocatedStudents["UR"] = urAllocated
+    // Allocate seats for reserved categories
 
-
-    val remainingStudents = sortedStudents.drop(urSeats).toMutableList()
-
-    // Allocate seats for other categories
     for ((category, seats) in seatsPerCategory) {
         if (category != "UR") {
             val categoryStudents = remainingStudents.filter { it.category == category }
@@ -482,5 +487,3 @@ expect suspend fun exportResults(
 
 expect fun processExcelFile(filePath: String): List<Student>
 
-
-//TODO Fix a bug in student allocation related to ur / general
