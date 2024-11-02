@@ -193,21 +193,25 @@ fun MainContent() {
 
                         Spacer(Modifier.height(16.dp))
                         Button(
-                                onClick = {
-                                    if (validateInputs(totalSeats, selectedStudents)) {
-                                        val totalSeatsCount = totalSeats.toInt()
-                                        allocatedStudents = allocateSeats(selectedStudents, totalSeatsCount, categoryQuotas)
-                                    } else {
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar("Please check your inputs and try again.")
-                                        }
+                            onClick = {
+                                if (validateInputs(totalSeats, selectedStudents)) {
+                                    val totalSeatsCount = totalSeats.toInt()
+                                    allocatedStudents = allocateSeats(
+                                        selectedStudents,
+                                        totalSeatsCount,
+                                        categoryQuotas
+                                    )
+                                } else {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Please check your inputs and try again.")
                                     }
-                                },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
                         ) {
-                        Text("Allocate Seats")
-                    }
+                            Text("Allocate Seats")
+                        }
                     }
                 }
             }
@@ -349,14 +353,21 @@ fun StudentSelectionDialog(
                     Text("Select", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
                     Text("App. No.", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
                     Text("Name", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
-                    Text("CUET Score", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
+                    Text(
+                        "CUET Score",
+                        modifier = Modifier.weight(0.2f),
+                        fontWeight = FontWeight.Bold
+                    )
                     Text("Category", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
                 }
 
                 // Student list
                 LazyColumn {
                     val filteredStudents = students.filter { student ->
-                        searchQuery.isEmpty() || student.cuetApplicationNo.contains(searchQuery, ignoreCase = true) ||
+                        searchQuery.isEmpty() || student.cuetApplicationNo.contains(
+                            searchQuery,
+                            ignoreCase = true
+                        ) ||
                                 student.name.contains(searchQuery, ignoreCase = true)
                     }
                     items(filteredStudents) { student ->
@@ -398,6 +409,7 @@ fun StudentSelectionDialog(
         }
     )
 }
+
 fun allocateSeats(
     students: List<Student>,
     totalSeats: Int,
@@ -452,7 +464,7 @@ fun validateInputs(totalSeats: String, selectedStudents: List<Student>): Boolean
 }
 
 data class Student(
-    val cuetApplicationNo : String ,
+    val cuetApplicationNo: String,
     val name: String,
     val phoneNoEmail: String,
     val cuetScore: Int,
@@ -471,4 +483,4 @@ expect suspend fun exportResults(
 expect fun processExcelFile(filePath: String): List<Student>
 
 
-//TODO Fix a bug in student allocation related to ur / general 
+//TODO Fix a bug in student allocation related to ur / general
