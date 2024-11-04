@@ -75,6 +75,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(compose.foundation)
             implementation("com.squareup.okio:okio:3.9.0")
             implementation("org.apache.poi:poi-ooxml:5.2.4")
 
@@ -120,6 +121,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.foundation.desktop)
     debugImplementation(compose.uiTooling)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 }

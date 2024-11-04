@@ -1,6 +1,7 @@
 package ayush.ggv.counselling
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,15 +53,15 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
-@Preview
-fun App() {
+fun App(scrollState: ScrollState) {
     MaterialTheme {
-        MainContent()
+        MainContent(scrollState)
     }
 }
-
 @Composable
-fun MainContent() {
+fun MainContent(
+    scrollState: ScrollState
+) {
     var selectedFilePath by remember { mutableStateOf<String?>(null) }
     var totalSeats by remember { mutableStateOf("") }
     var allocatedStudents by remember { mutableStateOf<Map<String, List<Student>>>(emptyMap()) }
@@ -99,7 +101,8 @@ fun MainContent() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .verticalScroll(scrollState)
+                .padding(end = 12.dp, start = 16.dp, top = 16.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
