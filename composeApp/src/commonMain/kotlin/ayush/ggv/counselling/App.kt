@@ -15,23 +15,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
-import androidx.compose.material.Checkbox
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,7 +94,7 @@ fun MainContent() {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colors.background
+        color = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -104,7 +104,7 @@ fun MainContent() {
         ) {
             Text(
                 "GGV Counselling",
-                style = MaterialTheme.typography.h4,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
@@ -113,7 +113,7 @@ fun MainContent() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                elevation = 4.dp
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -122,7 +122,7 @@ fun MainContent() {
                     Button(
                         onClick = { filePicker.launch() },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Upload")
                         Spacer(Modifier.width(8.dp))
@@ -146,7 +146,7 @@ fun MainContent() {
                                     showStudentSelection = true
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                             ) {
                                 Icon(Icons.Default.AddCircle, contentDescription = "Process")
                                 Spacer(Modifier.width(8.dp))
@@ -171,7 +171,7 @@ fun MainContent() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
-                    elevation = 4.dp
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -179,7 +179,7 @@ fun MainContent() {
                     ) {
                         Text(
                             "Selected Students: ${selectedStudents.size}",
-                            style = MaterialTheme.typography.h6,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -208,7 +208,7 @@ fun MainContent() {
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text("Allocate Seats")
                         }
@@ -221,7 +221,7 @@ fun MainContent() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    elevation = 4.dp
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -229,7 +229,7 @@ fun MainContent() {
                     ) {
                         Text(
                             "Allocated Students",
-                            style = MaterialTheme.typography.h6,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -243,7 +243,7 @@ fun MainContent() {
                                 item {
                                     Text(
                                         "$category (${students.count { !it.name.contains("Waiting List") }}):",
-                                        style = MaterialTheme.typography.subtitle1,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                                     )
@@ -251,13 +251,13 @@ fun MainContent() {
                                 items(students) { student ->
                                     Text(
                                         "${student.name} - CUET Score: ${student.cuetScore}",
-                                        color = if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary else MaterialTheme.colors.onSurface,
+                                        color = if (student.name.contains("Waiting List")) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 2.dp)
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(
-                                                if (student.name.contains("Waiting List")) MaterialTheme.colors.secondary.copy(
+                                                if (student.name.contains("Waiting List")) MaterialTheme.colorScheme.secondary.copy(
                                                     alpha = 0.1f
                                                 ) else Color.Transparent
                                             )
@@ -272,7 +272,7 @@ fun MainContent() {
                             onClick = { exportMenuExpanded = true },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !isExporting,
-                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primaryVariant)
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                         ) {
                             Text("Export Results")
                         }
@@ -280,36 +280,34 @@ fun MainContent() {
                             expanded = exportMenuExpanded,
                             onDismissRequest = { exportMenuExpanded = false }
                         ) {
-                            DropdownMenuItem(onClick = {
-                                exportFormat = "Excel"
-                                exportMenuExpanded = false
-                                coroutineScope.launch {
-                                    isExporting = true
-                                    val exportFilePath =
-                                        "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
-                                    val success =
-                                        exportResults(allocatedStudents, exportFilePath, "Excel")
-                                    isExporting = false
-                                    // Show success/failure message
+                            DropdownMenuItem(
+                                text = { Text("Export as Excel") },
+                                onClick = {
+                                    exportFormat = "Excel"
+                                    exportMenuExpanded = false
+                                    coroutineScope.launch {
+                                        isExporting = true
+                                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.xlsx"
+                                        val success = exportResults(allocatedStudents, exportFilePath, "Excel")
+                                        isExporting = false
+                                        // Show success/failure message
+                                    }
                                 }
-                            }) {
-                                Text("Export as Excel")
-                            }
-                            DropdownMenuItem(onClick = {
-                                exportFormat = "PDF"
-                                exportMenuExpanded = false
-                                coroutineScope.launch {
-                                    isExporting = true
-                                    val exportFilePath =
-                                        "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
-                                    val success =
-                                        exportResults(allocatedStudents, exportFilePath, "PDF")
-                                    isExporting = false
-                                    // Show success/failure message
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export as PDF") },
+                                onClick = {
+                                    exportFormat = "PDF"
+                                    exportMenuExpanded = false
+                                    coroutineScope.launch {
+                                        isExporting = true
+                                        val exportFilePath = "${selectedFilePath?.removeSuffix(".xlsx")}-results.pdf"
+                                        val success = exportResults(allocatedStudents, exportFilePath, "PDF")
+                                        isExporting = false
+                                        // Show success/failure message
+                                    }
                                 }
-                            }) {
-                                Text("Export as PDF")
-                            }
+                            )
                         }
                         if (isExporting) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -347,7 +345,7 @@ fun StudentSelectionDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colors.primary.copy(alpha = 0.1f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                         .padding(8.dp)
                 ) {
                     Text("Select", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
