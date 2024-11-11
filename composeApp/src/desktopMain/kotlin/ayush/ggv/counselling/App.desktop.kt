@@ -137,40 +137,62 @@ private fun exportToExcel(allocatedStudents: Map<String, List<Student>>, filePat
 }
 
 private fun exportToPDF(allocatedStudents: Map<String, List<Student>>, filePath: String) {
-    val document = Document()
+    val document = Document(PageSize.A4, 20f, 20f, 20f, 20f)
     PdfWriter.getInstance(document, FileOutputStream(filePath))
     document.open()
 
     val sortedCategories = listOf("UR", "OBC", "SC", "ST", "PWD")
 
-    sortedCategories.forEach { category ->
-        val students = allocatedStudents[category] ?: return@forEach
+    sortedCategories.forEachIndexed { index, category ->
+        if (index > 0) {
+            document.newPage()
+        }
 
-        document.add(Paragraph(category, Font(Font.FontFamily.HELVETICA, 16f, Font.BOLD)))
-        document.add(Paragraph(" "))
+        val students = allocatedStudents[category] ?: return@forEachIndexed
 
-        val table = PdfPTable(6)
+        // Add category title
+        val categoryFont = Font(Font.FontFamily.HELVETICA, 18f, Font.BOLD)
+        val categoryParagraph = Paragraph(category, categoryFont)
+        categoryParagraph.alignment = Element.ALIGN_CENTER
+        categoryParagraph.spacingAfter = 20f
+        document.add(categoryParagraph)
+
+        val table = PdfPTable(5)
         table.widthPercentage = 100f
+        table.setWidths(floatArrayOf(1f, 2f, 3f, 3f, 2f))
 
         // Add header row
-        listOf("S.No.", "Cuet Application " , "Name", "Phone/Email", "CUET Score", "Category", "Address").forEach {
-            table.addCell(PdfPCell(Phrase(it, Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD))))
+        val headers = listOf("S.No.", "CUET App. No.", "Name", "Phone/Email", "CUET Score")
+        headers.forEach {
+            val cell = PdfPCell(Phrase(it, Font(Font.FontFamily.HELVETICA, 12f, Font.BOLD)))
+            cell.horizontalAlignment = Element.ALIGN_CENTER
+            cell.verticalAlignment = Element.ALIGN_MIDDLE
+            cell.paddingBottom = 8f
+            cell.paddingTop = 8f
+            cell.backgroundColor = BaseColor.LIGHT_GRAY
+            table.addCell(cell)
         }
 
         // Add student data
         students.forEachIndexed { index, student ->
-            table.addCell((index + 1).toString())
-            table.addCell(student.cuetApplicationNo)
-            table.addCell(student.name)
-            table.addCell(student.phoneNoEmail)
-            table.addCell(student.cuetScore.toString())
-            table.addCell(student.category)
-            table.addCell(student.address)
+            addCellToTable(table, (index + 1).toString())
+            addCellToTable(table, student.cuetApplicationNo)
+            addCellToTable(table, student.name)
+            addCellToTable(table, student.phoneNoEmail)
+            addCellToTable(table, student.cuetScore.toString())
         }
 
         document.add(table)
-        document.add(Paragraph(" "))
     }
 
     document.close()
+}
+
+private fun addCellToTable(table: PdfPTable, content: String) {
+    val cell = PdfPCell(Phrase(content, Font(Font.FontFamily.HELVETICA, 10f)))
+    cell.horizontalAlignment = Element.ALIGN_CENTER
+    cell.verticalAlignment = Element.ALIGN_MIDDLE
+    cell.paddingTop = 5f
+    cell.paddingBottom = 5f
+    table.addCell(cell)
 }
