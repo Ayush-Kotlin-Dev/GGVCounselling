@@ -84,8 +84,11 @@ fun MainContent(
                 StudentAllocationCard(
                     viewModel = viewModel,
                     selectedStudentsCount = uiState.selectedStudents.size,
+                    counsellingRound = uiState.counsellingRound,
                     totalSeats = uiState.totalSeats,
-                    onTotalSeatsChanged = viewModel::setTotalSeats
+                    categorySeats = uiState.categorySeats,
+                    onTotalSeatsChanged = viewModel::setTotalSeats,
+                    onCategorySeatsChanged = viewModel::setCategorySeats
                 )
             }
 
@@ -240,8 +243,11 @@ fun CategorySeatsInput(
 fun StudentAllocationCard(
     viewModel: GGVCounsellingViewModel,
     selectedStudentsCount: Int,
+    counsellingRound: Int,
     totalSeats: String,
+    categorySeats: Map<String, String>,
     onTotalSeatsChanged: (String) -> Unit,
+    onCategorySeatsChanged: (String, String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -260,12 +266,16 @@ fun StudentAllocationCard(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            OutlinedTextField(
-                value = totalSeats,
-                onValueChange = onTotalSeatsChanged,
-                label = { Text("Total Number of Seats") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (counsellingRound == 1) {
+                OutlinedTextField(
+                    value = totalSeats,
+                    onValueChange = onTotalSeatsChanged,
+                    label = { Text("Total Number of Seats") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                CategorySeatsInput(categorySeats, onCategorySeatsChanged)
+            }
 
             Spacer(Modifier.height(16.dp))
             Button(
@@ -278,7 +288,6 @@ fun StudentAllocationCard(
         }
     }
 }
-
 @Composable
 fun AllocatedStudentsCard(
     allocatedStudents: Map<String, List<Student>>,

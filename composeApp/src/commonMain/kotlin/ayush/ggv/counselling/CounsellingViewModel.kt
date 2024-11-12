@@ -67,13 +67,26 @@ class GGVCounsellingViewModel : ViewModel() {
         }
     }
 
-     fun allocateSeatsForRoundOne(): Map<String, List<Student>> {
+    private fun validateInputs(): Boolean {
+        return if (uiState.counsellingRound == 1) {
+            uiState.totalSeats.toIntOrNull() != null && uiState.totalSeats.toInt() > 0 && uiState.selectedStudents.isNotEmpty()
+        } else {
+            uiState.categorySeats.all { it.value.toIntOrNull() != null && it.value.toInt() > 0 } && uiState.selectedStudents.isNotEmpty()
+        }
+    }
+
+    private fun allocateSeatsForRoundOne(): Map<String, List<Student>> {
         val totalSeatsCount = uiState.totalSeats.toInt()
         return allocateSeats(
             uiState.selectedStudents,
             totalSeatsCount,
             categoryQuotas
         )
+    }
+
+    private fun allocateSeatsForLaterRounds(): Map<String, List<Student>> {
+        val categorySeats = uiState.categorySeats.mapValues { it.value.toInt() }
+        return allocateSeatsForCategories(uiState.selectedStudents, categorySeats)
     }
 
     private fun allocateSeats(
@@ -126,10 +139,6 @@ class GGVCounsellingViewModel : ViewModel() {
         return allocatedStudents
     }
 
-    private fun allocateSeatsForLaterRounds(): Map<String, List<Student>> {
-        val categorySeats = uiState.categorySeats.mapValues { it.value.toInt() }
-        return allocateSeatsForCategories(uiState.selectedStudents, categorySeats)
-    }
 
     fun exportResults(format: String) {
         viewModelScope.launch {
@@ -142,13 +151,6 @@ class GGVCounsellingViewModel : ViewModel() {
         }
     }
 
-    private fun validateInputs(): Boolean {
-        return if (uiState.counsellingRound == 1) {
-            uiState.totalSeats.toIntOrNull() != null && uiState.totalSeats.toInt() > 0 && uiState.selectedStudents.isNotEmpty()
-        } else {
-            uiState.categorySeats.all { it.value.toIntOrNull() != null } && uiState.selectedStudents.isNotEmpty()
-        }
-    }
 
     private fun allocateSeatsForCategories(
         students: List<Student>,
