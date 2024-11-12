@@ -27,6 +27,16 @@ class GGVCounsellingViewModel : ViewModel() {
         uiState = uiState.copy(totalSeats = seats)
     }
 
+    fun setCounsellingRound(round: Int) {
+        uiState = uiState.copy(counsellingRound = round)
+    }
+
+    fun setCategorySeats(category: String, seats: String) {
+        val updatedCategorySeats = uiState.categorySeats.toMutableMap()
+        updatedCategorySeats[category] = seats
+        uiState = uiState.copy(categorySeats = updatedCategorySeats)
+    }
+
     fun processExcelFile() {
         viewModelScope.launch {
             val processedStudents = processExcelFile(uiState.selectedFilePath!!)
@@ -45,35 +55,25 @@ class GGVCounsellingViewModel : ViewModel() {
     }
 
     fun allocateSeats() {
-        if (validateInputs(uiState.totalSeats, uiState.selectedStudents)) {
-            val totalSeatsCount = uiState.totalSeats.toInt()
-            val allocatedStudents = allocateSeats(
-                uiState.selectedStudents,
-                totalSeatsCount,
-                categoryQuotas
-            )
-            uiState = uiState.copy(allocatedStudents = allocatedStudents)
-        }
-    }
-
-    fun exportResults(format: String) {
         viewModelScope.launch {
-            uiState = uiState.copy(isExporting = true)
-            val exportFilePath =
-                "${uiState.selectedFilePath?.removeSuffix(".xlsx")}-results.${format.lowercase()}"
-            val success = exportResults(uiState.allocatedStudents, exportFilePath, format)
-            uiState = uiState.copy(isExporting = false)
-            // Handle success/failure message
+            if (validateInputs()) {
+                val allocatedStudents = if (uiState.counsellingRound == 1) {
+                    allocateSeatsForRoundOne()
+                } else {
+                    allocateSeatsForLaterRounds()
+                }
+                uiState = uiState.copy(allocatedStudents = allocatedStudents)
+            }
         }
     }
 
-    private fun validateInputs(totalSeats: String, selectedStudents: List<Student>): Boolean {
-        val totalSeatsCount = totalSeats.toIntOrNull()
-        return when {
-            totalSeatsCount == null || totalSeatsCount <= 0 -> false
-            selectedStudents.isEmpty() -> false
-            else -> true
-        }
+     fun allocateSeatsForRoundOne(): Map<String, List<Student>> {
+        val totalSeatsCount = uiState.totalSeats.toInt()
+        return allocateSeats(
+            uiState.selectedStudents,
+            totalSeatsCount,
+            categoryQuotas
+        )
     }
 
     private fun allocateSeats(
@@ -90,6 +90,7 @@ class GGVCounsellingViewModel : ViewModel() {
         val urSeats = seatsPerCategory["UR"] ?: 0
         val urAllocated = mutableListOf<Student>()
         var remainingStudents = sortedStudents.toMutableList()
+
         // Allocate UR seats to top scorers from all categories
         for (i in 0 until urSeats) {
             if (remainingStudents.isNotEmpty()) {
@@ -98,8 +99,8 @@ class GGVCounsellingViewModel : ViewModel() {
             }
         }
         allocatedStudents["UR"] = urAllocated
-        // Allocate seats for reserved categories
 
+        // Allocate seats for reserved categories
         for ((category, seats) in seatsPerCategory) {
             if (category != "UR") {
                 val categoryStudents = remainingStudents.filter { it.category == category }
@@ -124,11 +125,65 @@ class GGVCounsellingViewModel : ViewModel() {
 
         return allocatedStudents
     }
+
+    private fun allocateSeatsForLaterRounds(): Map<String, List<Student>> {
+        val categorySeats = uiState.categorySeats.mapValues { it.value.toInt() }
+        return allocateSeatsForCategories(uiState.selectedStudents, categorySeats)
+    }
+
+    fun exportResults(format: String) {
+        viewModelScope.launch {
+            uiState = uiState.copy(isExporting = true)
+            val exportFilePath =
+                "${uiState.selectedFilePath?.removeSuffix(".xlsx")}-results.${format.lowercase()}"
+            val success = exportResults(uiState.allocatedStudents, exportFilePath, format)
+            uiState = uiState.copy(isExporting = false)
+            // Handle success/failure message
+        }
+    }
+
+    private fun validateInputs(): Boolean {
+        return if (uiState.counsellingRound == 1) {
+            uiState.totalSeats.toIntOrNull() != null && uiState.totalSeats.toInt() > 0 && uiState.selectedStudents.isNotEmpty()
+        } else {
+            uiState.categorySeats.all { it.value.toIntOrNull() != null } && uiState.selectedStudents.isNotEmpty()
+        }
+    }
+
+    private fun allocateSeatsForCategories(
+        students: List<Student>,
+        categorySeats: Map<String, Int>
+    ): Map<String, List<Student>> {
+        val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
+        val remainingStudents = students.toMutableList()
+
+        for ((category, seats) in categorySeats) {
+            val categoryStudents = remainingStudents.filter { it.category == category }
+            val allocatedForCategory = categoryStudents.take(seats)
+            allocatedStudents[category] = allocatedForCategory.toMutableList()
+            remainingStudents.removeAll(allocatedForCategory)
+        }
+
+        // Allocate waiting list seats for all categories
+        for (category in categorySeats.keys) {
+            val waitingList = remainingStudents.filter { it.category == category }.take(5)
+            allocatedStudents[category]!!.addAll(waitingList.mapIndexed { index, student ->
+                student.copy(name = "${student.name} (Waiting List ${index + 1})")
+            })
+            remainingStudents.removeAll(waitingList)
+        }
+
+        return allocatedStudents
+    }
 }
 
 data class GGVCounsellingUiState(
     val selectedFilePath: String? = null,
     val totalSeats: String = "",
+    val counsellingRound: Int = 1,
+    val categorySeats: Map<String, String> = mapOf(
+        "UR" to "", "OBC" to "", "SC" to "", "ST" to "", "PWD" to ""
+    ),
     val allocatedStudents: Map<String, List<Student>> = emptyMap(),
     val isExporting: Boolean = false,
     val processedStudents: List<Student> = emptyList(),

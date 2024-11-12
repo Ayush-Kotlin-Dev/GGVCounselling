@@ -70,18 +70,22 @@ fun MainContent(
 
             FileSelectionCard(
                 selectedFilePath = uiState.selectedFilePath,
+                counsellingRound = uiState.counsellingRound,
                 totalSeats = uiState.totalSeats,
+                categorySeats = uiState.categorySeats,
                 onFilePickerLaunch = { filePicker.launch() },
+                onCounsellingRoundChanged = viewModel::setCounsellingRound,
                 onTotalSeatsChanged = viewModel::setTotalSeats,
+                onCategorySeatsChanged = viewModel::setCategorySeats,
                 onProcessExcelFile = viewModel::processExcelFile
             )
 
             AnimatedVisibility(visible = uiState.selectedStudents.isNotEmpty()) {
                 StudentAllocationCard(
+                    viewModel = viewModel,
                     selectedStudentsCount = uiState.selectedStudents.size,
                     totalSeats = uiState.totalSeats,
-                    onTotalSeatsChanged = viewModel::setTotalSeats,
-                    onAllocateSeats = viewModel::allocateSeats
+                    onTotalSeatsChanged = viewModel::setTotalSeats
                 )
             }
 
@@ -125,9 +129,13 @@ fun MainContent(
 @Composable
 fun FileSelectionCard(
     selectedFilePath: String?,
+    counsellingRound: Int,
     totalSeats: String,
+    categorySeats: Map<String, String>,
     onFilePickerLaunch: () -> Unit,
+    onCounsellingRoundChanged: (Int) -> Unit,
     onTotalSeatsChanged: (String) -> Unit,
+    onCategorySeatsChanged: (String, String) -> Unit,
     onProcessExcelFile: () -> Unit
 ) {
     Card(
@@ -153,13 +161,18 @@ fun FileSelectionCard(
             AnimatedVisibility(visible = selectedFilePath != null) {
                 Column {
                     Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = totalSeats,
-                        onValueChange = onTotalSeatsChanged,
-                        label = { Text("Total Number of Seats") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
+                    CounsellingRoundSelector(counsellingRound, onCounsellingRoundChanged)
+                    Spacer(Modifier.height(16.dp))
+                    if (counsellingRound == 1) {
+                        OutlinedTextField(
+                            value = totalSeats,
+                            onValueChange = onTotalSeatsChanged,
+                            label = { Text("Total Number of Seats") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        CategorySeatsInput(categorySeats, onCategorySeatsChanged)
+                    }
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = onProcessExcelFile,
@@ -177,11 +190,58 @@ fun FileSelectionCard(
 }
 
 @Composable
+fun CounsellingRoundSelector(
+    selectedRound: Int,
+    onRoundSelected: (Int) -> Unit
+) {
+    Column {
+        Text("Select Counselling Round:", style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            for (round in 1..4) {
+                RadioButton(
+                    selected = selectedRound == round,
+                    onClick = { onRoundSelected(round) },
+                    modifier = Modifier.padding(4.dp)
+                )
+                Text(
+                    text = "Round $round",
+                    modifier = Modifier
+                        .clickable { onRoundSelected(round) }
+                        .padding(4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CategorySeatsInput(
+    categorySeats: Map<String, String>,
+    onCategorySeatsChanged: (String, String) -> Unit
+) {
+    Column {
+        categorySeats.forEach { (category, seats) ->
+            OutlinedTextField(
+                value = seats,
+                onValueChange = { onCategorySeatsChanged(category, it) },
+                label = { Text("$category Seats") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun StudentAllocationCard(
+    viewModel: GGVCounsellingViewModel,
     selectedStudentsCount: Int,
     totalSeats: String,
     onTotalSeatsChanged: (String) -> Unit,
-    onAllocateSeats: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -209,7 +269,7 @@ fun StudentAllocationCard(
 
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = onAllocateSeats,
+                onClick = { viewModel.allocateSeats() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
