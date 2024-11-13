@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ayush.ggv.counselling.ui.GGVCounsellingTheme
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
@@ -28,7 +29,7 @@ import io.github.vinceglb.filekit.core.PickerType
 fun App(scrollState: ScrollState) {
     val viewModel = remember { GGVCounsellingViewModel() }
 
-    MaterialTheme {
+    GGVCounsellingTheme {
         MainContent(viewModel, scrollState)
     }
 }
@@ -62,53 +63,51 @@ fun MainContent(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(scrollState)
         ) {
-            item {
-                FileSelectionCard(
-                    selectedFilePath = uiState.selectedFilePath,
+            FileSelectionCard(
+                selectedFilePath = uiState.selectedFilePath,
+                counsellingRound = uiState.counsellingRound,
+                totalSeats = uiState.totalSeats,
+                categorySeats = uiState.categorySeats,
+                onFilePickerLaunch = { filePicker.launch() },
+                onCounsellingRoundChanged = viewModel::setCounsellingRound,
+                onTotalSeatsChanged = viewModel::setTotalSeats,
+                onCategorySeatsChanged = viewModel::setCategorySeats,
+                onProcessExcelFile = viewModel::processExcelFile
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AnimatedVisibility(visible = uiState.selectedStudents.isNotEmpty()) {
+                StudentAllocationCard(
+                    viewModel = viewModel,
+                    selectedStudentsCount = uiState.selectedStudents.size,
                     counsellingRound = uiState.counsellingRound,
                     totalSeats = uiState.totalSeats,
                     categorySeats = uiState.categorySeats,
-                    onFilePickerLaunch = { filePicker.launch() },
-                    onCounsellingRoundChanged = viewModel::setCounsellingRound,
                     onTotalSeatsChanged = viewModel::setTotalSeats,
-                    onCategorySeatsChanged = viewModel::setCategorySeats,
-                    onProcessExcelFile = viewModel::processExcelFile
+                    onCategorySeatsChanged = viewModel::setCategorySeats
                 )
             }
 
-            item {
-                AnimatedVisibility(visible = uiState.selectedStudents.isNotEmpty()) {
-                    StudentAllocationCard(
-                        viewModel = viewModel,
-                        selectedStudentsCount = uiState.selectedStudents.size,
-                        counsellingRound = uiState.counsellingRound,
-                        totalSeats = uiState.totalSeats,
-                        categorySeats = uiState.categorySeats,
-                        onTotalSeatsChanged = viewModel::setTotalSeats,
-                        onCategorySeatsChanged = viewModel::setCategorySeats
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            item {
-                AnimatedVisibility(visible = uiState.allocatedStudents.isNotEmpty()) {
-                    AllocatedStudentsCard(
-                        allocatedStudents = uiState.allocatedStudents,
-                        isExporting = uiState.isExporting,
-                        onExportClick = { exportMenuExpanded = true },
-                        onExportFormat = { format ->
-                            exportMenuExpanded = false
-                            viewModel.exportResults(format)
-                        }
-                    )
-                }
+            AnimatedVisibility(visible = uiState.allocatedStudents.isNotEmpty()) {
+                AllocatedStudentsCard(
+                    allocatedStudents = uiState.allocatedStudents,
+                    isExporting = uiState.isExporting,
+                    onExportClick = { exportMenuExpanded = true },
+                    onExportFormat = { format ->
+                        exportMenuExpanded = false
+                        viewModel.exportResults(format)
+                    }
+                )
             }
         }
     }
