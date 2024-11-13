@@ -157,18 +157,32 @@ class GGVCounsellingViewModel : ViewModel() {
         categorySeats: Map<String, Int>
     ): Map<String, List<Student>> {
         val allocatedStudents = mutableMapOf<String, MutableList<Student>>()
-        val remainingStudents = students.toMutableList()
+        val remainingStudents = students.sortedByDescending { it.cuetScore }.toMutableList()
 
+        // First, allocate UR seats
+        val urSeats = categorySeats["UR"] ?: 0
+        val urAllocated = remainingStudents.take(urSeats)
+        allocatedStudents["UR"] = urAllocated.toMutableList()
+        remainingStudents.removeAll(urAllocated)
+
+        // Then allocate seats for other categories
         for ((category, seats) in categorySeats) {
-            val categoryStudents = remainingStudents.filter { it.category == category }
-            val allocatedForCategory = categoryStudents.take(seats)
-            allocatedStudents[category] = allocatedForCategory.toMutableList()
-            remainingStudents.removeAll(allocatedForCategory)
+            if (category != "UR") {
+                val categoryStudents = remainingStudents.filter { it.category == category }
+                val allocatedForCategory = categoryStudents.take(seats)
+                allocatedStudents[category] = allocatedForCategory.toMutableList()
+                remainingStudents.removeAll(allocatedForCategory)
+            }
         }
 
         // Allocate waiting list seats for all categories
+        val waitingListSize = 5
         for (category in categorySeats.keys) {
-            val waitingList = remainingStudents.filter { it.category == category }.take(5)
+            val waitingList = if (category == "UR") {
+                remainingStudents.take(waitingListSize)
+            } else {
+                remainingStudents.filter { it.category == category }.take(waitingListSize)
+            }
             allocatedStudents[category]!!.addAll(waitingList.mapIndexed { index, student ->
                 student.copy(name = "${student.name} (Waiting List ${index + 1})")
             })
