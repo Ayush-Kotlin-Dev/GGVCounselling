@@ -33,6 +33,7 @@ fun App(scrollState: ScrollState) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
     viewModel: GGVCounsellingViewModel,
@@ -50,58 +51,64 @@ fun MainContent(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Column(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("GGV Counselling") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                "GGV Counselling",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            FileSelectionCard(
-                selectedFilePath = uiState.selectedFilePath,
-                counsellingRound = uiState.counsellingRound,
-                totalSeats = uiState.totalSeats,
-                categorySeats = uiState.categorySeats,
-                onFilePickerLaunch = { filePicker.launch() },
-                onCounsellingRoundChanged = viewModel::setCounsellingRound,
-                onTotalSeatsChanged = viewModel::setTotalSeats,
-                onCategorySeatsChanged = viewModel::setCategorySeats,
-                onProcessExcelFile = viewModel::processExcelFile
-            )
-
-            AnimatedVisibility(visible = uiState.selectedStudents.isNotEmpty()) {
-                StudentAllocationCard(
-                    viewModel = viewModel,
-                    selectedStudentsCount = uiState.selectedStudents.size,
+            item {
+                FileSelectionCard(
+                    selectedFilePath = uiState.selectedFilePath,
                     counsellingRound = uiState.counsellingRound,
                     totalSeats = uiState.totalSeats,
                     categorySeats = uiState.categorySeats,
+                    onFilePickerLaunch = { filePicker.launch() },
+                    onCounsellingRoundChanged = viewModel::setCounsellingRound,
                     onTotalSeatsChanged = viewModel::setTotalSeats,
-                    onCategorySeatsChanged = viewModel::setCategorySeats
+                    onCategorySeatsChanged = viewModel::setCategorySeats,
+                    onProcessExcelFile = viewModel::processExcelFile
                 )
             }
 
-            AnimatedVisibility(visible = uiState.allocatedStudents.isNotEmpty()) {
-                AllocatedStudentsCard(
-                    allocatedStudents = uiState.allocatedStudents,
-                    isExporting = uiState.isExporting,
-                    onExportClick = { exportMenuExpanded = true },
-                    onExportFormat = { format ->
-                        exportMenuExpanded = false
-                        viewModel.exportResults(format)
-                    }
-                )
+            item {
+                AnimatedVisibility(visible = uiState.selectedStudents.isNotEmpty()) {
+                    StudentAllocationCard(
+                        viewModel = viewModel,
+                        selectedStudentsCount = uiState.selectedStudents.size,
+                        counsellingRound = uiState.counsellingRound,
+                        totalSeats = uiState.totalSeats,
+                        categorySeats = uiState.categorySeats,
+                        onTotalSeatsChanged = viewModel::setTotalSeats,
+                        onCategorySeatsChanged = viewModel::setCategorySeats
+                    )
+                }
+            }
+
+            item {
+                AnimatedVisibility(visible = uiState.allocatedStudents.isNotEmpty()) {
+                    AllocatedStudentsCard(
+                        allocatedStudents = uiState.allocatedStudents,
+                        isExporting = uiState.isExporting,
+                        onExportClick = { exportMenuExpanded = true },
+                        onExportFormat = { format ->
+                            exportMenuExpanded = false
+                            viewModel.exportResults(format)
+                        }
+                    )
+                }
             }
         }
     }
@@ -141,20 +148,24 @@ fun FileSelectionCard(
     onCategorySeatsChanged: (String, String) -> Unit,
     onProcessExcelFile: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        shape = MaterialTheme.shapes.medium,
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
+            Text(
+                "File Selection",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            OutlinedButton(
                 onClick = onFilePickerLaunch,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Upload")
                 Spacer(Modifier.width(8.dp))
@@ -162,10 +173,9 @@ fun FileSelectionCard(
             }
 
             AnimatedVisibility(visible = selectedFilePath != null) {
-                Column {
-                    Spacer(Modifier.height(16.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     CounsellingRoundSelector(counsellingRound, onCounsellingRoundChanged)
-                    Spacer(Modifier.height(16.dp))
+
                     if (counsellingRound == 1) {
                         OutlinedTextField(
                             value = totalSeats,
@@ -176,7 +186,7 @@ fun FileSelectionCard(
                     } else {
                         CategorySeatsInput(categorySeats, onCategorySeatsChanged)
                     }
-                    Spacer(Modifier.height(16.dp))
+
                     Button(
                         onClick = onProcessExcelFile,
                         modifier = Modifier.fillMaxWidth(),
@@ -197,23 +207,17 @@ fun CounsellingRoundSelector(
     selectedRound: Int,
     onRoundSelected: (Int) -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Select Counselling Round:", style = MaterialTheme.typography.bodyLarge)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             for (round in 1..4) {
-                RadioButton(
+                ElevatedFilterChip(
                     selected = selectedRound == round,
                     onClick = { onRoundSelected(round) },
-                    modifier = Modifier.padding(4.dp)
-                )
-                Text(
-                    text = "Round $round",
-                    modifier = Modifier
-                        .clickable { onRoundSelected(round) }
-                        .padding(4.dp)
+                    label = { Text("Round $round") }
                 )
             }
         }
@@ -225,15 +229,13 @@ fun CategorySeatsInput(
     categorySeats: Map<String, String>,
     onCategorySeatsChanged: (String, String) -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         categorySeats.forEach { (category, seats) ->
             OutlinedTextField(
                 value = seats,
                 onValueChange = { onCategorySeatsChanged(category, it) },
                 label = { Text("$category Seats") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -249,21 +251,23 @@ fun StudentAllocationCard(
     onTotalSeatsChanged: (String) -> Unit,
     onCategorySeatsChanged: (String, String) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        shape = MaterialTheme.shapes.medium,
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Selected Students: $selectedStudentsCount",
+                "Student Allocation",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                "Selected Students: $selectedStudentsCount",
+                style = MaterialTheme.typography.bodyLarge
             )
 
             if (counsellingRound == 1) {
@@ -277,7 +281,6 @@ fun StudentAllocationCard(
                 CategorySeatsInput(categorySeats, onCategorySeatsChanged)
             }
 
-            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { viewModel.allocateSeats() },
                 modifier = Modifier.fillMaxWidth(),
@@ -288,6 +291,7 @@ fun StudentAllocationCard(
         }
     }
 }
+
 @Composable
 fun AllocatedStudentsCard(
     allocatedStudents: Map<String, List<Student>>,
@@ -295,27 +299,25 @@ fun AllocatedStudentsCard(
     onExportClick: () -> Unit,
     onExportFormat: (String) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        shape = MaterialTheme.shapes.medium,
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 "Allocated Students",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontWeight = FontWeight.Bold
             )
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(300.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allocatedStudents.forEach { (category, students) ->
                     item {
@@ -327,25 +329,11 @@ fun AllocatedStudentsCard(
                         )
                     }
                     items(students) { student ->
-                        Text(
-                            "${student.name} - CUET Score: ${student.cuetScore}",
-                            color = if (student.name.contains("Waiting List")) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(
-                                    if (student.name.contains("Waiting List")) MaterialTheme.colorScheme.secondary.copy(
-                                        alpha = 0.1f
-                                    ) else Color.Transparent
-                                )
-                                .padding(4.dp)
-                        )
+                        StudentItem(student)
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onExportClick,
                 modifier = Modifier.fillMaxWidth(),
@@ -355,7 +343,54 @@ fun AllocatedStudentsCard(
                 Text("Export Results")
             }
             if (isExporting) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+@Composable
+fun StudentItem(student: Student) {
+    val isWaitingList = student.name.contains("Waiting List")
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp)),
+        color = if (isWaitingList) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (isWaitingList) 0.dp else 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    student.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "App No: ${student.cuetApplicationNo}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "CUET Score: ${student.cuetScore}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "Category: ${student.category}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (isWaitingList) {
+                Text(
+                    "Waiting List",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         }
     }
@@ -374,68 +409,78 @@ fun StudentSelectionDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Students for Counselling") },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     label = { Text("Search by Application No. or Name") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .padding(8.dp)
+                LazyColumn(
+                    modifier = Modifier.height(400.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Select", modifier = Modifier.weight(0.1f), fontWeight = FontWeight.Bold)
-                    Text("App. No.", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
-                    Text("Name", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
-                    Text("CUET Score", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
-                    Text("Category", modifier = Modifier.weight(0.2f), fontWeight = FontWeight.Bold)
-                }
-
-                LazyColumn {
                     val filteredStudents = students.filter { student ->
                         searchQuery.isEmpty() || student.cuetApplicationNo.contains(searchQuery, ignoreCase = true) ||
                                 student.name.contains(searchQuery, ignoreCase = true)
                     }
                     items(filteredStudents) { student ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedStudents = if (selectedStudents.contains(student)) {
-                                        selectedStudents - student
-                                    } else {
-                                        selectedStudents + student
-                                    }
+                        StudentSelectionItem(
+                            student = student,
+                            isSelected = selectedStudents.contains(student),
+                            onSelectionChanged = { isSelected ->
+                                selectedStudents = if (isSelected) {
+                                    selectedStudents + student
+                                } else {
+                                    selectedStudents - student
                                 }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Checkbox(
-                                checked = selectedStudents.contains(student),
-                                onCheckedChange = null,
-                                modifier = Modifier.weight(0.1f)
-                            )
-                            Text(student.cuetApplicationNo, modifier = Modifier.weight(0.2f))
-                            Text(student.name, modifier = Modifier.weight(0.3f))
-                            Text(student.cuetScore.toString(), modifier = Modifier.weight(0.2f))
-                            Text(student.category, modifier = Modifier.weight(0.2f))
-                        }
+                            }
+                        )
                     }
                 }
             }
         },
         confirmButton = {
             Button(onClick = { onConfirm(selectedStudents.toList()) }) {
-                Text("Confirm")
+                Text("Confirm (${selectedStudents.size})")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }
     )
+}
+
+@Composable
+fun StudentSelectionItem(
+    student: Student,
+    isSelected: Boolean,
+    onSelectionChanged: (Boolean) -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelectionChanged(!isSelected) },
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onSelectionChanged(it) }
+            )
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(student.name, fontWeight = FontWeight.Bold)
+                Text("App. No: ${student.cuetApplicationNo}", style = MaterialTheme.typography.bodySmall)
+                Text("CUET Score: ${student.cuetScore}", style = MaterialTheme.typography.bodySmall)
+                Text("Category: ${student.category}", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
 }
