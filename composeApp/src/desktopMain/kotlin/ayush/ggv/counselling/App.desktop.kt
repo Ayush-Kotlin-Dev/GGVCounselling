@@ -11,6 +11,7 @@ import com.itextpdf.text.*
 import com.itextpdf.text.pdf.PdfPCell
 import com.itextpdf.text.pdf.PdfPTable
 import com.itextpdf.text.pdf.PdfWriter
+import java.io.PrintStream
 
 
 actual fun processExcelFile(filePath: String): List<Student> {
@@ -25,7 +26,11 @@ actual fun processExcelFile(filePath: String): List<Student> {
                 try {
                     val cuetApplicationNo = row.getCell(0)?.stringCellValue
                     val name = row.getCell(1)?.stringCellValue
-                    val phoneNo = row.getCell(2)?.stringCellValue
+                    val phoneNo = when (row.getCell(2)?.cellType) {
+                        CellType.NUMERIC -> row.getCell(2).numericCellValue.toLong().toString()
+                        CellType.STRING -> row.getCell(2).stringCellValue
+                        else -> null
+                    }
                     val email = row.getCell(3)?.stringCellValue
                     val cuetScore = when (row.getCell(4)?.cellType) {
                         CellType.NUMERIC -> row.getCell(4).numericCellValue.toInt()
@@ -69,13 +74,14 @@ actual fun processExcelFile(filePath: String): List<Student> {
 actual suspend fun exportResults(
     allocatedStudents: Map<String, List<Student>>,
     filePath: String,
-    format: String
+    format: ExportFormat
 ): Boolean {
     return withContext(Dispatchers.IO) {
+        PrintStream(System.out).println("Exporting results to $filePath , format: $format")
         try {
             when (format) {
-                "Excel" -> exportToExcel(allocatedStudents, filePath)
-                "PDF" -> exportToPDF(allocatedStudents, filePath)
+                ExportFormat.XLSX -> exportToExcel(allocatedStudents, filePath)
+                ExportFormat.PDF -> exportToPDF(allocatedStudents, filePath)
                 else -> throw IllegalArgumentException("Unsupported format: $format")
             }
             println("Results exported successfully to $filePath")

@@ -56,11 +56,10 @@ import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
 
-sealed interface ExportFormat {
-    object Excel : ExportFormat
-    object PDF : ExportFormat
+enum class ExportFormat {
+    XLSX,
+    PDF
 }
-
 @Composable
 fun App(scrollState: ScrollState) {
     val viewModel = remember { GGVCounsellingViewModel() }
@@ -80,7 +79,7 @@ fun MainContent(
     var exportMenuExpanded by remember { mutableStateOf(false) }
 
     val filePicker = rememberFilePickerLauncher(
-        type = PickerType.File(extensions = listOf("xlsx", "xls")),
+        type = PickerType.File(extensions = listOf("XLSX", "xls")),
         mode = PickerMode.Single
     ) { file ->
         if (file != null) {
@@ -141,7 +140,7 @@ fun MainContent(
                     onExportClick = { exportMenuExpanded = true },
                     onExportFormat = { format ->
                         exportMenuExpanded = false
-                        viewModel.exportResults(format.toString())
+                        viewModel.exportResults(format)
                     }
                 )
             }
@@ -153,26 +152,6 @@ fun MainContent(
             students = uiState.processedStudents,
             onDismiss = { viewModel.setSelectedStudents(emptyList()) },
             onConfirm = viewModel::setSelectedStudents
-        )
-    }
-
-    DropdownMenu(
-        expanded = exportMenuExpanded,
-        onDismissRequest = { exportMenuExpanded = false }
-    ) {
-        DropdownMenuItem(
-            text = { Text("Export as Excel") },
-            onClick = {
-                exportMenuExpanded = false
-                viewModel.exportResults(ExportFormat.Excel.toString())
-            }
-        )
-        DropdownMenuItem(
-            text = { Text("Export as PDF") },
-            onClick = {
-                exportMenuExpanded = false
-                viewModel.exportResults(ExportFormat.PDF.toString())
-            }
         )
     }
 }
@@ -350,6 +329,8 @@ fun AllocatedStudentsCard(
     onExportClick: () -> Unit,
     onExportFormat: (ExportFormat) -> Unit
 ) {
+    var exportMenuExpanded by remember { mutableStateOf(false) }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.elevatedCardColors(
@@ -389,7 +370,7 @@ fun AllocatedStudentsCard(
             }
 
             Button(
-                onClick = onExportClick,
+                onClick = { exportMenuExpanded = true },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isExporting,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
@@ -400,6 +381,25 @@ fun AllocatedStudentsCard(
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            DropdownMenu(
+                expanded = exportMenuExpanded,
+                onDismissRequest = { exportMenuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Export as Excel") },
+                    onClick = {
+                        exportMenuExpanded = false
+                        onExportFormat(ExportFormat.XLSX)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Export as PDF") },
+                    onClick = {
+                        exportMenuExpanded = false
+                        onExportFormat(ExportFormat.PDF)
+                    }
                 )
             }
         }

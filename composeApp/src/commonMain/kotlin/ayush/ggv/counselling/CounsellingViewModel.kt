@@ -11,13 +11,16 @@ class GGVCounsellingViewModel : ViewModel() {
     var uiState by mutableStateOf(GGVCounsellingUiState())
         private set
 
-    private val categoryQuotas = mapOf(
-        "UR" to 0.4f,
-        "OBC" to 0.3f,
-        "SC" to 0.15f,
-        "ST" to 0.075f,
-        "PWD" to 0.075f
+    val categoryQuotas = mapOf(
+        "UR" to 0.4133f,  // 41.33%
+        "OBC" to 0.2533f, // 25.33%
+        "SC" to 0.1333f,  // 13.33%
+        "ST" to 0.0667f,  // 6.67%
+        "EWS" to 0.0933f  // 9.33%
     )
+
+
+
 
     fun setSelectedFilePath(path: String?) {
         uiState = uiState.copy(selectedFilePath = path)
@@ -140,11 +143,11 @@ class GGVCounsellingViewModel : ViewModel() {
     }
 
 
-    fun exportResults(format: String) {
+    fun exportResults(format: ExportFormat) {
         viewModelScope.launch {
             uiState = uiState.copy(isExporting = true)
             val exportFilePath =
-                "${uiState.selectedFilePath?.removeSuffix(".xlsx")}-results.${format.lowercase()}"
+                "${uiState.selectedFilePath?.removeSuffix(".XLSX")}-results.${format.toString().lowercase()}"
             val success = exportResults(uiState.allocatedStudents, exportFilePath, format)
             uiState = uiState.copy(isExporting = false)
             // Handle success/failure message
@@ -220,7 +223,7 @@ data class Student(
 expect suspend fun exportResults(
     allocatedStudents: Map<String, List<Student>>,
     filePath: String,
-    format: String
+    format: ExportFormat
 ): Boolean
 
 expect fun processExcelFile(filePath: String): List<Student>

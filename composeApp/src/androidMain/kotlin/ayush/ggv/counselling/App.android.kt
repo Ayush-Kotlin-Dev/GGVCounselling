@@ -68,14 +68,17 @@ actual fun processExcelFile(filePath: String): List<Student> {
 actual suspend fun exportResults(
     allocatedStudents: Map<String, List<Student>>,
     filePath: String,
-    format: String
+    format: ExportFormat
 ): Boolean {
     return withContext(Dispatchers.IO) {
         try {
             when (format) {
-                "Excel" -> exportToExcel(allocatedStudents, filePath)
-                "PDF" -> exportToPDF(allocatedStudents, filePath)
-                else -> throw IllegalArgumentException("Unsupported format: $format")
+                ExportFormat.XLSX -> exportToExcel(allocatedStudents, filePath)
+                ExportFormat.PDF -> exportToPDF(allocatedStudents, filePath)
+                else -> {
+                    println("Invalid export format: $format")
+                    return@withContext false
+                }
             }
             println("Results exported successfully to $filePath")
             true
